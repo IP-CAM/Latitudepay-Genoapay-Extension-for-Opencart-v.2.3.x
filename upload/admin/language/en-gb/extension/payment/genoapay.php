@@ -23,7 +23,7 @@ $_['entry_partially_refunded_status']	 = 'Partially Refunded Status:';
 
 // Help
 $_['help_total']				         = 'The order must reach this amount before Genoapay is offered.';
-$_['help_debug']				         = 'Enabling debug will write order information data to a log file and this allows troubleshooting if Genoapay doesn\'t work as expected.';
+$_['help_debug']				         = 'Enabling debug will write order information data to a log file (<oc root>/system/storage/logs/) and this allows troubleshooting if Genoapay doesn\'t work as expected.';
 
 // Tab
 $_['tab_settings']				         = 'Settings';
