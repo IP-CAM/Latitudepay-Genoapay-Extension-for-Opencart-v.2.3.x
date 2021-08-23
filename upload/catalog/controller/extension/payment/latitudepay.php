@@ -192,6 +192,10 @@ class ControllerExtensionPaymentLatitudePay extends Controller {
 		$order_id = isset($this->request->get['reference']) ? $this->request->get['reference'] : null;
 		if (is_null($order_id))	return;
 
+		$result = $_REQUEST['result'] ?? null;
+		if (is_null($result)) return;
+		if (($result != "COMPLETED")) return;
+
 		$url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 		$this->model_extension_payment_latitudepay->log($url);
 
