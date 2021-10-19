@@ -1,7 +1,7 @@
 
 ===== LatitudePay and Genoapay Integrations for OpenCart 2.3 ===== 
 
-Version: 1.0.3
+Version: 1.0.4
 Compatibility: OpenCart 2.3.0.2
 
 Author: Latitude Financial Services
@@ -28,6 +28,9 @@ The latest installation and configuration guide can be accessed here: https://re
 4 Save when done.
 
 ===== Changelog =====
+
+1.0.4 (20 October 2021)
+Improve debug logging
 
 1.0.3 (19 October 2021)
 Add Pending status

@@ -233,6 +233,7 @@ class ControllerExtensionPaymentGenoapay extends Controller {
 	}
 
 	private function requestAuthToken(){
+		$this->model_extension_payment_genoapay->log("REQUEST TOKEN:");
 		$url = "$this->requestUrl/v3/token";
 		$this->model_extension_payment_genoapay->log($url);
 
@@ -246,11 +247,14 @@ class ControllerExtensionPaymentGenoapay extends Controller {
 		]);
 		$response = curl_exec($curl);
 		curl_close($curl);
+		$this->model_extension_payment_genoapay->log("RESPONSE:");
+		$this->model_extension_payment_genoapay->log($response);
 		$response = json_decode($response);
 		return $response;
 	}
 
 	private function onlineSale($order_info){
+		$this->model_extension_payment_genoapay->log("REQUEST ONLINE SALE:");
 		$originalJson = $this->jsonBuilderForSale($order_info);
 		$phpObject = json_decode($originalJson,true);
 	
@@ -261,7 +265,6 @@ class ControllerExtensionPaymentGenoapay extends Controller {
 
 		# Make JSON for body query only
 		$json = json_encode($phpObject,true);
-		$this->model_extension_payment_genoapay->log($json);
 		# END
 		
 		$base64 = base64_encode($cleanJson);
@@ -269,6 +272,7 @@ class ControllerExtensionPaymentGenoapay extends Controller {
 		
 		$url = "$this->requestUrl/v3/sale/online?signature=$hash";
 		$this->model_extension_payment_genoapay->log($url);
+		$this->model_extension_payment_genoapay->log($json);
 
 		$curl = curl_init($url);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -282,6 +286,8 @@ class ControllerExtensionPaymentGenoapay extends Controller {
 		]);
 		$response = curl_exec($curl);
 		curl_close($curl);
+		$this->model_extension_payment_genoapay->log("RESPONSE:");
+		$this->model_extension_payment_genoapay->log($response);
 		$response = json_decode($response);
 		return $response;
 	}
@@ -499,6 +505,7 @@ class ControllerExtensionPaymentGenoapay extends Controller {
 	}
 
 	private function requestConfiguration(){
+		$this->model_extension_payment_genoapay->log("REQUEST CONFIG:");
 		$url = "$this->requestUrl/v3/configuration";
 		$this->model_extension_payment_genoapay->log($url);
 		
@@ -511,6 +518,8 @@ class ControllerExtensionPaymentGenoapay extends Controller {
 		]);
 		$response = curl_exec($curl);
 		curl_close($curl);
+		$this->model_extension_payment_genoapay->log("RESPONSE:");
+		$this->model_extension_payment_genoapay->log($response);
 		$response = json_decode($response);
 		return $response;
 	}
