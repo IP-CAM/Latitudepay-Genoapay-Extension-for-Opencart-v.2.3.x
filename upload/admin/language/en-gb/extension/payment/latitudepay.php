@@ -17,6 +17,7 @@ $_['entry_status']				         = 'Status';
 $_['entry_sort_order']			         = 'Sort Order';
 $_['entry_debug']				         = 'Debug logging';
 $_['entry_success_status']		         = 'Success Status:';
+$_['entry_pending_status']		         = 'Pending Payment Status:';
 $_['entry_failed_status']		         = 'Failed/Cancelled Status:';
 $_['entry_refunded_status']			     = 'Refunded Status:';
 $_['entry_partially_refunded_status']	 = 'Partially Refunded Status:';

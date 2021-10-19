@@ -34,6 +34,7 @@ class ControllerExtensionPaymentLatitudePay extends Controller {
 		$data['entry_debug'] = $this->language->get('entry_debug');
 
 		$data['entry_success_status'] = $this->language->get('entry_success_status');
+		$data['entry_pending_status'] = $this->language->get('entry_pending_status');
 		$data['entry_failed_status'] = $this->language->get('entry_failed_status');
 		$data['entry_refunded_status'] = $this->language->get('entry_refunded_status');
 		$data['entry_partially_refunded_status'] = $this->language->get('entry_partially_refunded_status');
@@ -142,6 +143,12 @@ class ControllerExtensionPaymentLatitudePay extends Controller {
 			$data['latitudepay_entry_success_status_id'] = $this->request->post['latitudepay_entry_success_status_id'];
 		} else {
 			$data['latitudepay_entry_success_status_id'] = $this->config->get('latitudepay_entry_success_status_id');
+		}
+
+		if (isset($this->request->post['latitudepay_entry_pending_status_id'])) {
+			$data['latitudepay_entry_pending_status_id'] = $this->request->post['latitudepay_entry_pending_status_id'];
+		} else {
+			$data['latitudepay_entry_pending_status_id'] = $this->config->get('latitudepay_entry_pending_status_id');
 		}
 
 		if (isset($this->request->post['latitudepay_entry_failed_status_id'])) {

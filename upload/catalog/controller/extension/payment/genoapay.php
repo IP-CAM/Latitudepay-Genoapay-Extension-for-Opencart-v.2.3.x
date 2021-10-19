@@ -127,22 +127,33 @@ class ControllerExtensionPaymentGenoapay extends Controller {
 			$this->response->redirect($this->url->link('checkout/checkout', '', true));
 		}
 
+		// add created payment url, payment plan id, etc. into OrderHistory
+		$payment_plan_message = 'Genoapay Initiated. Payment Plan ID: '.$response->reference.'. Merchant Reference: '.$response->merchantReference.'. Transaction Token: '.$response->token.'. Customer Payment URL: '.$response->paymentUrl.'.';
+		$this->model_checkout_order->addOrderHistory($order_info['order_id'], $this->config->get('genoapay_entry_pending_status_id'), $payment_plan_message);
+
 		// otherwise add to custom order table and redirect
 		$this->model_extension_payment_genoapay->addGenoapayOrder($order_info['order_id'], $response->token, $response->reference, $order_total, 0, $order_info['currency_code']);
 		$this->response->redirect($response->paymentUrl);
 	}
 
 	public function fail_webhook() {
+		$this->load->model('checkout/order');
 		$this->load->model('extension/payment/genoapay');
 		$this->model_extension_payment_genoapay->log('fail_webhook');
 
+		$message = isset($_REQUEST['message']) ? $_REQUEST['message'] : null;
 		$order_id = isset($_REQUEST['reference']) ? $_REQUEST['reference'] : null;
-		if (is_null($order_id)){
+		if (is_null($order_id) || is_null($message)){
 			$this->session->data['error'] = 'Illegal access.';
 		} else {
+			$this->model_checkout_order->addOrderHistory($order_id, $this->config->get('genoapay_entry_failed_status_id'), $message);
 			$this->model_extension_payment_genoapay->updateOrderStatus($order_id, $this->config->get('genoapay_entry_failed_status_id'));
 			$this->session->data['error'] = 'Your purchase order has been cancelled.';
 		}
+
+		$url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+		$this->model_extension_payment_genoapay->log($url);
+
 		$this->response->redirect($this->url->link('checkout/checkout', '', true));
 	}
 
