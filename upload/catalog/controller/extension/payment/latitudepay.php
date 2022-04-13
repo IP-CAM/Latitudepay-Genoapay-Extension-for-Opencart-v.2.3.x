@@ -315,7 +315,7 @@ class ControllerExtensionPaymentLatitudePay extends Controller {
 
 		$shippingMethod = $order_info['shipping_method'] ? $order_info['shipping_method'] : 'N/A';
 		$shippingMethod = str_replace(array("\r\n", "\n", "\r"), '', $shippingMethod);
-		$shippingCost = $order_info['shipping_method'] ? $this->session->data['shipping_method']['cost'] : 0;
+		$shippingCost = $this->session->data['shipping_method']['cost'] ? $this->session->data['shipping_method']['cost'] : 0;
 
 		$taxAmount = 0;
         $taxes = $this->cart->getTaxes();
