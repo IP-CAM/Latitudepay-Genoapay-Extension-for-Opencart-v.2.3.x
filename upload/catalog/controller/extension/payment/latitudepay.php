@@ -141,18 +141,27 @@ class ControllerExtensionPaymentLatitudePay extends Controller {
 		$this->load->model('extension/payment/latitudepay');
 		$this->model_extension_payment_latitudepay->log('fail_webhook');
 
-		$message = isset($_REQUEST['message']) ? $_REQUEST['message'] : null;
-		$order_id = isset($_REQUEST['reference']) ? $_REQUEST['reference'] : null;
-		if (is_null($order_id) || is_null($message)){
-			$this->session->data['error'] = 'Illegal access.';
-		} else {
-			$this->model_checkout_order->addOrderHistory($order_id, $this->config->get('latitudepay_entry_failed_status_id'), $message);
-			$this->model_extension_payment_latitudepay->updateOrderStatus($order_id, $this->config->get('latitudepay_entry_failed_status_id'));
-			$this->session->data['error'] = 'Your purchase order has been cancelled.';
-		}
-
 		$url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 		$this->model_extension_payment_latitudepay->log($url);
+
+		if(!$this->verifyJsonApiResponse($url)){
+			// Investigate if signature mismatch happens
+			$errorMessage = "Signature mismatch. API Response has been tampered. Please investigate: $url";
+			$this->session->data['error'] = $errorMessage;
+			$this->model_extension_payment_latitudepay->log($errorMessage);
+			$this->response->redirect($this->url->link('checkout/checkout', '', true));
+		}
+
+		$result = $_REQUEST['result'] ?? null;
+		if (is_null($result)) return;
+		if (($result != "FAILED")) return;
+
+		$order_id = $_REQUEST['reference'] ?? null;
+		$message = $_REQUEST['message'] ?? null;
+
+		$this->model_checkout_order->addOrderHistory($order_id, $this->config->get('latitudepay_entry_failed_status_id'), $message);
+		$this->model_extension_payment_latitudepay->updateOrderStatus($order_id, $this->config->get('latitudepay_entry_failed_status_id'));
+		$this->session->data['error'] = 'Your purchase order has been cancelled.';
 
 		$this->response->redirect($this->url->link('checkout/checkout', '', true));
 	}
@@ -162,37 +171,43 @@ class ControllerExtensionPaymentLatitudePay extends Controller {
 		$this->load->model('extension/payment/latitudepay');
 		$this->model_extension_payment_latitudepay->log('success_webhook');
 
-		$order_id = isset($this->request->get['reference']) ? $this->request->get['reference'] : null;
-		if (is_null($order_id)){
-			$this->session->data['error'] = 'Illegal access.';
-			$this->response->redirect($this->url->link('checkout/checkout', '', true));
-		}
-
 		$url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 		$this->model_extension_payment_latitudepay->log($url);
 
-		if($this->verifyJsonApiResponse($url)){
-			$order = $this->model_checkout_order->getOrder($order_id);
-			if ($order) {
-				// if order hasn't been completed, add it to order history and make it complete
-				if ($order['order_status_id'] !== $this->config->get('latitudepay_entry_success_status_id')){
-					$success_message = 'Payment of '.$this->currency->format($order['total'], $order['currency_code']).' was successful via LatitudePay. Transaction Token: '.$this->request->get['token'].'.';
-					$this->model_checkout_order->addOrderHistory($order_id, $this->config->get('latitudepay_entry_success_status_id'),$success_message);
-					$this->model_extension_payment_latitudepay->updateLatitudePayOrderStatus($order_id, 1);
-				}
-				$this->response->redirect($this->url->link('checkout/success', '', true));
-			} else {
-				// if order does not exist, go back to checkout
-				$this->session->data['error'] = 'Error occurred. Order does not exist. Please try again.';
-				$this->model_extension_payment_latitudepay->log('Error occurred. Order does not exist. Please try again.');
-				$this->response->redirect($this->url->link('checkout/checkout', '', true));
-			}
-		} else {
+		if(!$this->verifyJsonApiResponse($url)){
 			// Investigate if signature mismatch happens
-			$this->session->data['error'] = 'Signature mismatch. API Response has been tampered. Please investigate.';
-			$this->model_extension_payment_latitudepay->log('Signature mismatch. API Response has been tampered. Please investigate.');
+			$errorMessage = "Signature mismatch. API Response has been tampered. Please investigate: $url";
+			$this->session->data['error'] = $errorMessage;
+			$this->model_extension_payment_latitudepay->log($errorMessage);
 			$this->response->redirect($this->url->link('checkout/checkout', '', true));
 		}
+
+		$result = $_REQUEST['result'] ?? null;
+		if (is_null($result)) return;
+		if (($result != "COMPLETED")) return;
+
+		$order_id = $_REQUEST['reference'] ?? null;
+		$order = $this->model_checkout_order->getOrder($order_id);
+
+		if (!$order) {
+			// if order does not exist, go back to checkout
+			$errorMessage = "Error occurred. Order $order_id does not exist. Please contact Merchant.";
+			$this->session->data['error'] = $errorMessage;
+			$this->model_extension_payment_latitudepay->log($errorMessage);
+			$this->response->redirect($this->url->link('checkout/checkout', '', true));
+		}
+		
+		// if order is PENDING, make it complete and add to order history
+		if ($order['order_status_id'] === $this->config->get('latitudepay_entry_pending_status_id')){
+			$this->model_extension_payment_latitudepay->log("Order $order_id changed from PENDING to SUCCESS.");
+			$success_message = 'Payment of '.$this->currency->format($order['total'], $order['currency_code']).' was successful via LatitudePay. Transaction Token: '.$this->request->get['token'].'.';
+			$this->model_checkout_order->addOrderHistory($order_id, $this->config->get('latitudepay_entry_success_status_id'),$success_message);
+			$this->model_extension_payment_latitudepay->updateLatitudePayOrderStatus($order_id, 1);
+		} else {
+			$this->model_extension_payment_latitudepay->log("Order $order_id is not PENDING, no action taken.");
+		}
+
+		$this->response->redirect($this->url->link('checkout/success', '', true));
 	}
 
 	public function callback_webhook() {
@@ -200,36 +215,48 @@ class ControllerExtensionPaymentLatitudePay extends Controller {
 		$this->load->model('extension/payment/latitudepay');
 		$this->model_extension_payment_latitudepay->log('callback_webhook');
 
-		$order_id = isset($this->request->get['reference']) ? $this->request->get['reference'] : null;
-		if (is_null($order_id))	return;
-
-		$result = $_REQUEST['result'] ?? null;
-		if (is_null($result)) return;
-		if (($result != "COMPLETED")) return;
-
 		$url = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 		$this->model_extension_payment_latitudepay->log($url);
 
-		if($this->verifyJsonApiResponse($url)){
-			$order = $this->model_checkout_order->getOrder($order_id);
-			if ($order) {
-				// if order hasn't been completed, add it to order history and make it complete
-				if ($order['order_status_id'] !== $this->config->get('latitudepay_entry_success_status_id')){
-					$success_message = 'Payment of '.$this->currency->format($order['total'], $order['currency_code']).' was successful via LatitudePay Callback. Transaction Token: '.$this->request->get['token'].'.';
-					$this->model_checkout_order->addOrderHistory($order_id, $this->config->get('latitudepay_entry_success_status_id'),$success_message);
-					$this->model_extension_payment_latitudepay->updateLatitudePayOrderStatus($order_id, 1);
-				}
-				return;
-			} else {
-				// if order does not exist, exit
-				$this->model_extension_payment_latitudepay->log('Error occurred. Order does not exist. Please try again.');
-				return;
-			}
-		} else {
+		if(!$this->verifyJsonApiResponse($url)){
 			// Investigate if signature mismatch happens
-			$this->model_extension_payment_latitudepay->log('Signature mismatch. API Response has been tampered. Please investigate.');
+			$errorMessage = "Callback: Signature mismatch. API Response has been tampered. Please investigate: $url";
+			$this->model_extension_payment_latitudepay->log($errorMessage);
 			return;
 		}
+
+		$result = $_REQUEST['result'] ?? null;
+		if (is_null($result)) return;
+		if ($result != "COMPLETED" && $result != "FAILED") return;
+
+		$order_id = $_REQUEST['reference'] ?? null;
+		$order = $this->model_checkout_order->getOrder($order_id);
+
+		if (!$order) {
+			// if order does not exist, exit
+			$errorMessage = "Callback: Error occurred. Order $order_id does not exist. Please contact Merchant.";
+			$this->model_extension_payment_latitudepay->log($errorMessage);
+			return;
+		}
+
+		if ($result == "COMPLETED"){
+			// if order is PENDING, make it complete and add to order history
+			if ($order['order_status_id'] === $this->config->get('latitudepay_entry_pending_status_id')){
+				$this->model_extension_payment_latitudepay->log("Callback: Order $order_id changed from PENDING to SUCCESS.");
+				$success_message = 'Callback: Payment of '.$this->currency->format($order['total'], $order['currency_code']).' was successful via LatitudePay. Transaction Token: '.$this->request->get['token'].'.';
+				$this->model_checkout_order->addOrderHistory($order_id, $this->config->get('latitudepay_entry_success_status_id'),$success_message);
+				$this->model_extension_payment_latitudepay->updateLatitudePayOrderStatus($order_id, 1);
+			} else {
+				$this->model_extension_payment_latitudepay->log("Callback: Order $order_id is not PENDING, no action taken.");
+			}
+		} else if ($result == "FAILED"){
+			$this->model_extension_payment_latitudepay->log("Callback: Order $order_id changed to FAILED.");
+			$message = $_REQUEST['message'] ?? null;
+			$this->model_checkout_order->addOrderHistory($order_id, $this->config->get('latitudepay_entry_failed_status_id'), "Callback: $message");
+			$this->model_extension_payment_latitudepay->updateOrderStatus($order_id, $this->config->get('latitudepay_entry_failed_status_id'));
+		}
+
+		return;
 	}
 
 	private function requestAuthToken(){
