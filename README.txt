@@ -30,7 +30,7 @@ The latest installation and configuration guide can be accessed here: https://re
 ===== Changelog =====
 
 1.0.5 (13 April 2022)
-Add compatibility with [Collect Payment Later](https://www.opencart.com/index.php?route=marketplace/extension/info&extension_id=29816)
+Add compatibility with Collect Payment Later
 Improve payment status assignment
 
 1.0.4 (20 October 2021)
