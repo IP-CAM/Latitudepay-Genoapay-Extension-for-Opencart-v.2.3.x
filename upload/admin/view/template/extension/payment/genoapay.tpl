@@ -64,6 +64,13 @@ SETTINGS TAB
 		  <div class="tab-pane active" id="tab-general">
 
 			<div class="form-group">
+			  <label class="col-sm-2 control-label" for="input-version">Version</label>
+			  <div class="col-sm-10">
+				<input type="text" readonly name="genoapay_version" value="1.0.5" id="input-version" class="form-control" />
+			  </div>
+			</div>
+
+			<div class="form-group">
 			  <label class="col-sm-2 control-label" for="input-status"><?php echo $entry_status; ?></label>
 			  <div class="col-sm-10">
 				<select name="genoapay_status" id="input-status" class="form-control">
